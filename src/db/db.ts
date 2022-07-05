@@ -9,40 +9,36 @@ initializeApp({
 });
 const db = getFirestore();
 
-export async function registerUserIfNotExists(guildId: string, userId: string) {
-  const userDoc = db.doc(`guilds/${guildId}/users/${userId}`);
-
-  const neededToCreate = await db.runTransaction(async (transaction) => {
-    const userDocData = await transaction.get(userDoc);
-    if (userDocData.exists) {
-      console.log(`ALREADY EXISTS: User ${userId} in Guild ${guildId}`);
-      return false;
-    }
-
-    transaction.create(userDoc, { points: 0 });
-
-    console.log(`REGISTERED: User ${userId} in Guild ${guildId}`);
-    return true;
-  });
-
-  return neededToCreate;
+type ManifoldUser = {
+  admin?: boolean,
+  avatarUrl: string,
+  balance: number,
+  bio?: string,
+  createdTime: number,
+  creatorVolumeCached?: {
+    allTime: number,
+    daily: number,
+    monthly: number,
+    weekly: number
+  },
+  discordHandle?: string
+  id: string,
+  name: string,
+  username: string,
 }
 
-export async function registerGuildIfNotExists(guildId: string) {
-  console.log(`Attempting to register Guild ${guildId} in database.`);
+// returns manifold user id
+export async function getManifoldUser(discordHandle: string): Promise<[string, ManifoldUser][]> {
+  const users = await db
+    .collection(`/users`)
+    .where("discordHandle", "==", discordHandle)
+    .orderBy("createdTime", "desc")
+    .limit(1)
+    .get()
 
-  const guildDoc = db.doc(`guilds/${guildId}`);
-  return db.runTransaction(async (transaction) => {
-    const guildDocData = await transaction.get(guildDoc);
-    if (guildDocData.exists) {
-      console.log(`ALREADY EXISTS: Guild ${guildId}`);
-      return false;
-    }
-    transaction.create(guildDoc, { permissionRoleName: "Instructor" });
-    console.log(`REGISTERED: Guild ${guildId}`);
-    return true;
-  });
+  return users.docs.map((doc) => [doc.id, doc.data() as ManifoldUser]);
 }
+
 
 export async function getLogChannel(
   guildId: string
@@ -64,20 +60,6 @@ export async function clearLogChannel(guildId: string): Promise<void> {
     .update({ logChannelId: FieldValue.delete() });
 }
 
-export async function getModRoleId(
-  guildId: string
-): Promise<string | undefined> {
-  const guild = await db.doc(`guilds/${guildId}`).get();
-  return guild.data()?.modRoleId;
-}
-
-export async function setModRoleId(
-  guildId: string,
-  modRoleId: string
-): Promise<void> {
-  await db.doc(`guilds/${guildId}/`).set({ modRoleId });
-}
-
 export async function getUserPoints(
   guildId: string,
   userId: string
@@ -88,8 +70,8 @@ export async function getUserPoints(
 
 export async function getRankings(guildId: string) {
   const users = await db
-    .collection(`guilds/${guildId}/users`)
-    .orderBy("points", "desc")
+    .collection(`/users`)
+    .orderBy("balance", "desc")
     .get()
     .then((snapshot) => snapshot.docs.map((doc) => [doc.id, doc.data()]));
 
@@ -108,53 +90,50 @@ export async function getUserRank(
   return index === -1 ? null : index + 1;
 }
 
-export async function incrementUserPoints(
-  guildId: string,
+export async function incrementUserBalance(
   userId: string,
-  points: number
+  delta: number
 ) {
-  console.log("ADDING:", points, "TO:", userId, "IN:", guildId);
+  console.log("ADDING:", delta, "TO:", userId);
 
-  const recipient = db.doc(`guilds/${guildId}/users/${userId}`);
+  const recipient = db.doc(`users/${userId}`);
 
   const pointsIncremented = await db.runTransaction(async (transaction) => {
     const recipientData = await transaction.get(recipient);
 
-    const oldPoints: number = recipientData.get("points");
-    const newPoints = oldPoints + points < 0 ? 0 : oldPoints + points;
+    const oldBalance: number = recipientData.get("balance");
+    const newBalance = oldBalance + delta < 0 ? 0 : oldBalance + delta;
 
-    transaction.update(recipient, { points: newPoints });
-    return newPoints - oldPoints;
+    transaction.update(recipient, { balance: newBalance });
+    return newBalance - oldBalance;
   });
 
   return pointsIncremented;
 }
 
-export async function givePoints(
+export async function pay(
   guildId: string,
   donorUserId: string,
   recipientUserId: string,
-  points: number
+  amount: number
 ) {
-  const donor = db.doc(`guilds/${guildId}/users/${donorUserId}`);
-  const recipient = db.doc(`guilds/${guildId}/users/${recipientUserId}`);
+  const donor = db.doc(`users/${donorUserId}`);
+  const recipient = db.doc(`users/${recipientUserId}`);
 
-  const sentPoints = await db.runTransaction(async (transaction) => {
-    const donorPointsOld: number = (await transaction.get(donor)).get("points");
-    const recipientPointsOld: number = (await transaction.get(recipient)).get(
-      "points"
-    );
+  const sentAmount = await db.runTransaction(async (transaction) => {
+    const donorBalanceOld: number = (await transaction.get(donor)).get("balance");
+    const recipientBalanceOld: number = (await transaction.get(recipient)).get("balance");
 
-    const pointsGiven = points > donorPointsOld ? donorPointsOld : points;
+    const amountGiven = amount > donorBalanceOld ? donorBalanceOld : amount;
 
     transaction.update(donor, {
-      points: donorPointsOld - pointsGiven
+      points: donorBalanceOld - amountGiven
     });
     transaction.update(recipient, {
-      points: recipientPointsOld + pointsGiven
+      points: recipientBalanceOld + amountGiven
     });
-    return pointsGiven;
+    return amountGiven;
   });
 
-  return sentPoints;
+  return sentAmount;
 }
