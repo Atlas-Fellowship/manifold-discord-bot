@@ -4,10 +4,9 @@ import { Command } from "../command";
 import {
   clearLogChannel,
   setLogChannel,
-  setModRoleId
 } from "../db/db";
 
-import { errorMessage, confirmPerms } from "../utils/confirmPerms";
+import { errorMessage, confirmAdminPerms, confirmGuild } from "../utils/confirmPerms";
 
 const Configure: Command = {
   name: "configure",
@@ -29,29 +28,23 @@ const Configure: Command = {
         }
       ]
     },
-    {
-      name: "role",
-      description:
-        'Configure the role which has permission to modify points and settings.',
-      type: "SUB_COMMAND",
-      options: [
-        {
-          name: "role",
-          description: "the role to give permission",
-          type: "ROLE",
-          required: true
-        }
-      ]
-    }
   ],
   execute: async (_client: Client, interaction: CommandInteraction) => {
-    const confirmRet = await confirmPerms(interaction, "configure settings");
-    if (!confirmRet.success) {
-      await interaction.reply({ embeds: [confirmRet.reply] });
+    const action = "configure settings";
+
+    const guildRet = await confirmGuild(interaction, action);
+    if (!guildRet.success) {
+      await interaction.reply({ embeds: [guildRet.reply] });
+      return;
+    }
+    const adminRet = await confirmAdminPerms(interaction, action);
+    if (!adminRet.success) {
+      await interaction.reply({ embeds: [adminRet.reply] });
       return;
     }
 
-    const guildId = confirmRet.guild.id;
+
+    const guildId = guildRet.guild.id;
 
     if (interaction.options.getSubcommand() === "log") {
       const channel = interaction.options.getChannel("channel");
@@ -82,25 +75,6 @@ const Configure: Command = {
         .setColor("#0B0056")
         .setTitle("Configuration Updated")
         .setDescription(`Logs will now be sent to <#${channel.id}>.`)
-        .setFooter({
-          text: "Atlas E-Clips",
-          iconURL:
-            "https://storage.googleapis.com/image-bucket-atlas-points-bot/logo.png"
-        })
-        .setTimestamp(new Date());
-
-      await interaction.reply({ embeds: [summary] });
-    }
-
-    if (interaction.options.getSubcommand() === "role") {
-      const role = interaction.options.getRole("role") as Role;
-
-      await setModRoleId(guildId, role.id);
-
-      const summary = new MessageEmbed()
-        .setColor(role.color)
-        .setTitle("Configuration Updated")
-        .setDescription(`Role updated to <@&${role.id}>.`)
         .setFooter({
           text: "Atlas E-Clips",
           iconURL:

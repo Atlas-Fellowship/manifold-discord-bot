@@ -77,7 +77,7 @@ export async function getManifoldUser(discordHandle: string): Promise<ManifoldUs
   return userPairs[0];
 }
 
-export async function getRankings(guildId: string): Promise<ManifoldUser[]> {
+export async function getRankings(): Promise<ManifoldUser[]> {
   const users = await db
     .collection(`/users`)
     .orderBy("balance", "desc")
@@ -122,10 +122,10 @@ export async function pay(
     const amountGiven = amount > donorBalanceOld ? donorBalanceOld : amount;
 
     transaction.update(donor, {
-      points: donorBalanceOld - amountGiven
+      balance: donorBalanceOld - amountGiven
     });
     transaction.update(recipient, {
-      points: recipientBalanceOld + amountGiven
+      balance: recipientBalanceOld + amountGiven
     });
     return amountGiven;
   });

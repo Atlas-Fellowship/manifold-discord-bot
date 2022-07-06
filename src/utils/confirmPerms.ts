@@ -16,10 +16,9 @@ export function errorMessage(description: string): MessageEmbed {
   return errorSummary;
 }
 
-type ConfirmResult = {
+type ConfirmGuildResult = {
   success: true,
   guild: Guild,
-  user: ManifoldUser
 } | {
   success: false,
   reply: MessageEmbed
@@ -29,7 +28,7 @@ type ConfirmResult = {
 export async function confirmGuild(
   interaction: CommandInteraction,
   action: string
-): Promise<ConfirmResult> {
+): Promise<ConfirmGuildResult> {
   if (!interaction.guild) {
     return {
       success: false,
@@ -37,40 +36,55 @@ export async function confirmGuild(
     };
   }
 
-  const manifoldUser = await getManifoldUser(interaction.guild.id);
+  return {
+    success: true,
+    guild: interaction.guild,
+  };
+}
+
+type ConfirmManifoldResult = {
+  success: true,
+  user: ManifoldUser,
+} | {
+  success: false,
+  reply: MessageEmbed
+}
+
+
+
+export async function confirmManifoldUser(
+  interaction: CommandInteraction,
+): Promise<ConfirmManifoldResult > {
+
+  const manifoldUser = await getManifoldUser(interaction.user.tag);
   if(!manifoldUser) {
     return {
       success: false,
-      reply: errorMessage(`Couldn't find a linked Manifold account. Add your discord username in your Manifold profile.`)
-    };
-  }
-
-  if(!manifoldUser.admin) {
-      return {
-      success: false,
-      reply: errorMessage(`Your manifold account does not have admin permissions.`)
+      reply: errorMessage(`Couldn't find a linked Manifold account. Add your discord username (${interaction.user.tag}) in your Manifold profile.`)
     };
   }
 
   return {
     success: true,
-    guild: interaction.guild,
     user: manifoldUser
   };
 }
 
-export async function confirmPerms(
+type ConfirmAdminPermsResult = {
+  success: true,
+  user: ManifoldUser,
+} | {
+  success: false,
+  reply: MessageEmbed
+}
+
+
+
+export async function confirmAdminPerms(
   interaction: CommandInteraction,
   action: string
-): Promise<ConfirmResult> {
-  if (!interaction.member || !interaction.guild) {
-    return {
-      success: false,
-      reply: errorMessage(`You can only ${action} in a server.`)
-    };
-  }
-
-  const manifoldUser = await getManifoldUser(interaction.guild.id);
+): Promise<ConfirmAdminPermsResult> {
+  const manifoldUser = await getManifoldUser(interaction.user.tag);
   if(!manifoldUser) {
     return {
       success: false,
@@ -87,7 +101,6 @@ export async function confirmPerms(
 
   return {
     success: true,
-    guild: interaction.guild,
     user: manifoldUser
   };
 }

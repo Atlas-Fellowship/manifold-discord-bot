@@ -3,7 +3,7 @@ import { CommandInteraction, Client, Role } from "discord.js";
 import { Command } from "../command";
 import { getLogChannel } from "../db/db";
 
-import { errorMessage, confirmPerms } from "../utils/confirmPerms";
+import { errorMessage, confirmGuild, confirmAdminPerms } from "../utils/confirmPerms";
 import incrementRolePoints from "../utils/incrementRolePoints";
 import incrementSingleUserPoints from "../utils/incrementSingleUserPoints";
 
@@ -37,7 +37,7 @@ const Subtract: Command = {
       description: "the role to target",
       type: "ROLE"
     },
-    
+
   ],
   execute: async (_client: Client, interaction: CommandInteraction) => {
     const amount = interaction.options.getInteger("amount");
@@ -52,25 +52,33 @@ const Subtract: Command = {
       return;
     }
 
-    const confirmRet = await confirmPerms(interaction, "subtract E-Clips directly");
-    if (!confirmRet.success) {
-      await interaction.reply({ embeds: [confirmRet.reply] });
+    const action ="subtract E-Clips directly";
+
+    const guildRet = await confirmGuild(interaction, action);
+    if (!guildRet.success) {
+      await interaction.reply({ embeds: [guildRet.reply] });
+      return;
+    }
+    const adminRet = await confirmAdminPerms(interaction, action);
+    if (!adminRet.success) {
+      await interaction.reply({ embeds: [adminRet.reply] });
       return;
     }
 
-    let reply;
 
+    let reply;
     if (role === null) {
       const target = user ?? interaction.user;
-      reply = await incrementSingleUserPoints(_client, confirmRet.guild.id, target, -amount, memo);
+      reply = await incrementSingleUserPoints(_client, target.tag, -amount, memo);
     } else if (user === null) {
-      reply = await incrementRolePoints(_client, confirmRet.guild.id, role, -amount, memo);
+      reply = await incrementRolePoints(_client, role, -amount, memo);
     } else {
       reply = errorMessage("Can't target a user and role at the same time");
     }
 
+
     // log to configured channel
-    const logChannelId = await getLogChannel(confirmRet.guild.id);
+    const logChannelId = await getLogChannel(guildRet.guild.id);
     if (logChannelId) {
       const logChannel = _client.channels.cache.get(logChannelId);
       if (logChannel && logChannel.isText()) {

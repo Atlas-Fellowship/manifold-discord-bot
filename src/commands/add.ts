@@ -3,7 +3,7 @@ import { CommandInteraction, Client, Role } from "discord.js";
 import { Command } from "../command";
 import { getLogChannel } from "../db/db";
 
-import { errorMessage, confirmPerms } from "../utils/confirmPerms";
+import { errorMessage, confirmGuild, confirmAdminPerms } from "../utils/confirmPerms";
 import incrementRolePoints from "../utils/incrementRolePoints";
 import incrementSingleUserPoints from "../utils/incrementSingleUserPoints";
 
@@ -52,20 +52,24 @@ const Add: Command = {
       return;
     }
 
-    const confirmRet = await confirmPerms(interaction, "add E-Clips directly");
-    if (!confirmRet.success) {
-      await interaction.reply({ embeds: [confirmRet.reply] });
+    const action ="add E-Clips directly";
+
+    const guildRet = await confirmGuild(interaction, action);
+    if (!guildRet.success) {
+      await interaction.reply({ embeds: [guildRet.reply] });
+      return;
+    }
+    const adminRet = await confirmAdminPerms(interaction, action);
+    if (!adminRet.success) {
+      await interaction.reply({ embeds: [adminRet.reply] });
       return;
     }
 
-    console.log(interaction.user.tag);
 
     let reply;
-
-
     if (role === null) {
       const target = user ?? interaction.user;
-      reply = await incrementSingleUserPoints(_client, target, amount, memo);
+      reply = await incrementSingleUserPoints(_client, target.tag, amount, memo);
     } else if (user === null) {
       reply = await incrementRolePoints(_client, role, amount, memo);
     } else {
@@ -74,7 +78,7 @@ const Add: Command = {
 
 
     // log to configured channel
-    const logChannelId = await getLogChannel(confirmRet.guild.id);
+    const logChannelId = await getLogChannel(guildRet.guild.id);
     if (logChannelId) {
       const logChannel = _client.channels.cache.get(logChannelId);
       if (logChannel && logChannel.isText()) {

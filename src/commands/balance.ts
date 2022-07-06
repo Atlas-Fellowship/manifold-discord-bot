@@ -1,8 +1,8 @@
 import { CommandInteraction, Client, MessageEmbed } from "discord.js";
-import { getUserRank, getUserPoints } from "../db/db";
+import { getManifoldUser } from "../db/db";
 
 import { Command } from "../command";
-import { confirmGuild, confirmPerms } from "../utils/confirmPerms";
+import { confirmGuild, confirmPerms, errorMessage } from "../utils/confirmPerms";
 
 const Balance: Command = {
   name: "balance",
@@ -38,27 +38,30 @@ const Balance: Command = {
       guildId = confirmRet.guild.id;
     }
 
-    const user = specifiedUser || interactionUser;
+    const discordUser = specifiedUser || interactionUser;
 
-    const userSummary = new MessageEmbed()
-      .setColor("#0B0056")
-      .setTitle(`E-Clip summary for ${user.username}`)
-      .setThumbnail(user.avatarURL() || user.defaultAvatarURL)
-      .addFields(
-        {
-          name: "Ranking",
-          value: `#${await getUserRank(guildId, user.id)}`,
-          inline: true
-        },
-        {
-          name: "Total E-Clips",
-          value: `${await getUserPoints(guildId, user.id)}`,
-          inline: true
-        }
-      )
-      .setTimestamp(new Date());
+    const manifoldUser = await getManifoldUser(discordUser.tag);
 
-    await interaction.reply({ embeds: [userSummary] });
+    let reply;
+
+    if (manifoldUser === undefined) {
+      reply = errorMessage(`Couldn't find corresponding Manifold user for: @${discordUser.tag}.`);
+    } else {
+      reply = new MessageEmbed()
+        .setColor("#0B0056")
+        .setTitle(`E-Clip summary for ${manifoldUser.name}`)
+        .setThumbnail(manifoldUser.avatarUrl)
+        .addFields(
+          {
+            name: "Total E-Clips",
+            value: `${manifoldUser.balance}`,
+            inline: true
+          }
+        )
+        .setTimestamp(new Date());
+    }
+
+    await interaction.reply({ embeds: [reply] });
   }
 };
 

@@ -6,7 +6,6 @@ import { zip } from "./other";
 // increment all users in role's points (can be negative!)
 export default async function incrementRolePoints(
   client: Client,
-  guildId: string,
   role: Role,
   amount: number,
   memo: string
