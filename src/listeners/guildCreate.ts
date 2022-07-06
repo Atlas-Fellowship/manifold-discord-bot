@@ -1,6 +1,6 @@
 import { Client } from "discord.js";
 import { Command } from "../command";
-import { registerGuildIfNotExists, registerUserIfNotExists } from "../db/db";
+import { registerGuildIfNotExists} from "../db/db";
 
 export default (client: Client, commands: Command[]): void => {
   client.on("guildCreate", async (guild) => {
@@ -9,10 +9,5 @@ export default (client: Client, commands: Command[]): void => {
 
     // register guild
     await registerGuildIfNotExists(guild.id);
-
-    // register each member
-    (await guild.members.fetch()).forEach(async (member) => {
-      await registerUserIfNotExists(guild.id, member.user.id);
-    });
   });
 };

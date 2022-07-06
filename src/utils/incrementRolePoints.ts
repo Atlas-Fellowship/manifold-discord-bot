@@ -1,5 +1,7 @@
 import { CommandInteraction, Role, MessageEmbed, Client } from "discord.js";
-import { incrementUserPoints, getUserPoints, getLogChannel } from "../db/db";
+import { incrementUserBalance, getManifoldUser, getLogChannel, ManifoldUser } from "../db/db";
+import { errorMessage } from "./confirmPerms";
+import { zip } from "./other";
 
 // increment all users in role's points (can be negative!)
 export default async function incrementRolePoints(
@@ -13,33 +15,49 @@ export default async function incrementRolePoints(
   // fetch all members for role
   await role.guild.members.fetch();
 
+  // get all users, if can't get all of them then throw an error
+  const memberDiscordTags: string[] = [];
+  const futureManifoldUsers: Promise<ManifoldUser | undefined>[] = [];
+  for (const [, member] of role.members) {
+    memberDiscordTags.push(member.user.id);
+    futureManifoldUsers.push(getManifoldUser(member.user.tag));
+  }
+
+  // get which ones were successful
+  const manifoldUsers: ManifoldUser[] = []
+  const notFoundTags: string[] = [];
+  for (const [i, maybeManifoldUser] of (await Promise.all(futureManifoldUsers)).entries()) {
+    if (maybeManifoldUser) {
+      manifoldUsers.push(maybeManifoldUser);
+    } else {
+      notFoundTags.push(memberDiscordTags[i]);
+    }
+  }
+
+  // throw error if any of the retrievals were false
+  if (notFoundTags.length > 0) {
+    const tagList = notFoundTags.slice(0, 10).map(x => `⦁ @${x}`).join("\n");
+    const truncatedMessage = notFoundTags.length > 10 ? `\n\n**Truncated - ${notFoundTags.length - 10} more**` : "";
+    return errorMessage("Couldn't find corresponding Manifold user for:\n" + tagList + truncatedMessage);
+  }
+
   // first increment points for each member in role
   const promises = [];
-  for (const [, member] of role.members) {
-    promises.push(incrementUserPoints(guildId, member.user.id, amount));
+  for (const u of manifoldUsers) {
+    promises.push(incrementUserBalance(u.id, amount));
   }
   const incrementedAmounts = await Promise.all(promises);
 
   const amountMagnitude = Math.abs(amount);
   const changePhrase = amount > 0 ? "added to" : "removed from";
 
-  // then output the results
-  const affectedUsers: [string, number | undefined][] = [];
-
-  for (const [, member] of role.members) {
-    const { id } = member.user;
-    // TODO: fix balance to use new value rather than old one
-    const balance = await getUserPoints(guildId, id);
-    affectedUsers.push([id, balance]);
-  }
-
-  let list = affectedUsers
-    .map((user) => `⦁ <@${user[0]}> — New Balance: **${user[1]}** E-Clips`)
+  let list = manifoldUsers
+    .map((user, i) => `⦁ @${user.discordHandle} — New Balance: **${user.balance + incrementedAmounts[i]}** E-Clips`)
     .slice(0, 10)
     .join("\n");
 
-  if (affectedUsers.length > 10) {
-    list += `\n\n**Truncated - ${affectedUsers.length - 10} more**`;
+  if (manifoldUsers.length > 10) {
+    list += `\n\n**Truncated - ${manifoldUsers.length - 10} more**`;
   }
 
   const memoString = memo === "" ? "" : `\n\nMemo: **${memo}**`;

@@ -9,36 +9,22 @@ initializeApp({
 });
 const db = getFirestore();
 
-type ManifoldUser = {
-  admin?: boolean,
-  avatarUrl: string,
-  balance: number,
-  bio?: string,
-  createdTime: number,
-  creatorVolumeCached?: {
-    allTime: number,
-    daily: number,
-    monthly: number,
-    weekly: number
-  },
-  discordHandle?: string
-  id: string,
-  name: string,
-  username: string,
+
+export async function registerGuildIfNotExists(guildId: string) {
+  console.log(`Attempting to register Guild ${guildId} in database.`);
+
+  const guildDoc = db.doc(`guilds/${guildId}`);
+  return db.runTransaction(async (transaction) => {
+    const guildDocData = await transaction.get(guildDoc);
+    if (guildDocData.exists) {
+      console.log(`ALREADY EXISTS: Guild ${guildId}`);
+      return false;
+    }
+    transaction.create(guildDoc, { permissionRoleName: "Instructor" });
+    console.log(`REGISTERED: Guild ${guildId}`);
+    return true;
+  });
 }
-
-// returns manifold user id
-export async function getManifoldUser(discordHandle: string): Promise<[string, ManifoldUser][]> {
-  const users = await db
-    .collection(`/users`)
-    .where("discordHandle", "==", discordHandle)
-    .orderBy("createdTime", "desc")
-    .limit(1)
-    .get()
-
-  return users.docs.map((doc) => [doc.id, doc.data() as ManifoldUser]);
-}
-
 
 export async function getLogChannel(
   guildId: string
@@ -60,34 +46,44 @@ export async function clearLogChannel(guildId: string): Promise<void> {
     .update({ logChannelId: FieldValue.delete() });
 }
 
-export async function getUserPoints(
-  guildId: string,
-  userId: string
-): Promise<number | undefined> {
-  const user = await db.doc(`guilds/${guildId}/users/${userId}`).get();
-  return user.data()?.points;
+export type ManifoldUser = {
+  admin?: boolean,
+  avatarUrl: string,
+  balance: number,
+  bio?: string,
+  createdTime: number,
+  creatorVolumeCached?: {
+    allTime: number,
+    daily: number,
+    monthly: number,
+    weekly: number
+  },
+  discordHandle: string
+  id: string,
+  name: string,
+  username: string,
 }
 
-export async function getRankings(guildId: string) {
+// returns manifold user id
+export async function getManifoldUser(discordHandle: string): Promise<ManifoldUser | undefined> {
+  const users = await db
+    .collection(`/users`)
+    .where("discordHandle", "==", discordHandle)
+    .orderBy("createdTime", "desc")
+    .limit(1)
+    .get()
+
+  const userPairs = users.docs.map((doc) => doc.data() as ManifoldUser);
+  return userPairs[0];
+}
+
+export async function getRankings(guildId: string): Promise<ManifoldUser[]> {
   const users = await db
     .collection(`/users`)
     .orderBy("balance", "desc")
-    .get()
-    .then((snapshot) => snapshot.docs.map((doc) => [doc.id, doc.data()]));
+    .get();
 
-  return users;
-}
-
-// get the ranking of a user
-export async function getUserRank(
-  guildId: string,
-  userId: string
-): Promise<number | null> {
-  const users = await getRankings(guildId);
-
-  const index = users.findIndex(([id]) => id === userId);
-
-  return index === -1 ? null : index + 1;
+  return users.docs.map((doc) => doc.data() as ManifoldUser);
 }
 
 export async function incrementUserBalance(
@@ -112,7 +108,6 @@ export async function incrementUserBalance(
 }
 
 export async function pay(
-  guildId: string,
   donorUserId: string,
   recipientUserId: string,
   amount: number

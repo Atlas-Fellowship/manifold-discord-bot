@@ -58,13 +58,16 @@ const Add: Command = {
       return;
     }
 
+    console.log(interaction.user.tag);
+
     let reply;
+
 
     if (role === null) {
       const target = user ?? interaction.user;
-      reply = await incrementSingleUserPoints(_client, confirmRet.guild.id, target, amount, memo);
+      reply = await incrementSingleUserPoints(_client, target, amount, memo);
     } else if (user === null) {
-      reply = await incrementRolePoints(_client, confirmRet.guild.id, role, amount, memo);
+      reply = await incrementRolePoints(_client, role, amount, memo);
     } else {
       reply = errorMessage("Can't target a user and role at the same time");
     }

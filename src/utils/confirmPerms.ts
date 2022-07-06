@@ -1,5 +1,5 @@
 import { CommandInteraction, Guild, GuildMemberRoleManager, MessageEmbed } from "discord.js";
-import { getModRoleId } from "../db/db";
+import { getManifoldUser, ManifoldUser } from "../db/db";
 
 export function errorMessage(description: string): MessageEmbed {
   const errorSummary = new MessageEmbed()
@@ -18,7 +18,8 @@ export function errorMessage(description: string): MessageEmbed {
 
 type ConfirmResult = {
   success: true,
-  guild: Guild
+  guild: Guild,
+  user: ManifoldUser
 } | {
   success: false,
   reply: MessageEmbed
@@ -36,9 +37,25 @@ export async function confirmGuild(
     };
   }
 
+  const manifoldUser = await getManifoldUser(interaction.guild.id);
+  if(!manifoldUser) {
+    return {
+      success: false,
+      reply: errorMessage(`Couldn't find a linked Manifold account. Add your discord username in your Manifold profile.`)
+    };
+  }
+
+  if(!manifoldUser.admin) {
+      return {
+      success: false,
+      reply: errorMessage(`Your manifold account does not have admin permissions.`)
+    };
+  }
+
   return {
     success: true,
-    guild: interaction.guild
+    guild: interaction.guild,
+    user: manifoldUser
   };
 }
 
@@ -53,24 +70,24 @@ export async function confirmPerms(
     };
   }
 
-  const modRoleId = await getModRoleId(interaction.guild.id);
+  const manifoldUser = await getManifoldUser(interaction.guild.id);
+  if(!manifoldUser) {
+    return {
+      success: false,
+      reply: errorMessage(`Couldn't find a linked Manifold account. Add your discord username in your Manifold profile.`)
+    };
+  }
 
-  const member = await interaction.guild.members.fetch(interaction.user.id);
-
-  const permitted = member.permissions.has("ADMINISTRATOR") || member.roles.cache.some((role) => role.id === modRoleId);
-
-  if (!permitted) {
-    let message;
-    if (modRoleId !== undefined) {
-      message = `Only admins or members with role <@&${modRoleId}> can ${action}.`;
-    } else {
-      message = `Only admins can ${action}. (use \`/configure role\` to change)`;
-    }
-    return { success: false, reply: errorMessage(message) }
+  if(!manifoldUser.admin) {
+      return {
+      success: false,
+      reply: errorMessage(`Your manifold account does not have admin permissions.`)
+    };
   }
 
   return {
     success: true,
-    guild: interaction.guild
+    guild: interaction.guild,
+    user: manifoldUser
   };
 }
