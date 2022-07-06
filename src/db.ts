@@ -1,7 +1,7 @@
 import { cert, initializeApp, ServiceAccount } from "firebase-admin/app";
 import { FieldValue, getFirestore } from "firebase-admin/firestore";
 
-import serviceAccountKey from "../../serviceAccountKey.json";
+import serviceAccountKey from "../serviceAccountKey.json";
 
 // initialize Firebase
 initializeApp({

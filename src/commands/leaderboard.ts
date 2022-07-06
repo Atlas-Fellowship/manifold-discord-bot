@@ -1,5 +1,5 @@
 import { CommandInteraction, Client, MessageEmbed } from "discord.js";
-import { getRankings } from "../db/db";
+import { getRankings } from "../db";
 
 import { Command } from "../command";
 

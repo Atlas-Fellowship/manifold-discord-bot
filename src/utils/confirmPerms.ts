@@ -1,5 +1,5 @@
 import { CommandInteraction, Guild, GuildMemberRoleManager, MessageEmbed } from "discord.js";
-import { getManifoldUser, ManifoldUser } from "../db/db";
+import { getManifoldUser, ManifoldUser } from "../db";
 
 export function errorMessage(description: string): MessageEmbed {
   const errorSummary = new MessageEmbed()

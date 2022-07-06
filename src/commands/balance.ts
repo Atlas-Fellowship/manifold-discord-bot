@@ -1,5 +1,5 @@
 import { CommandInteraction, Client, MessageEmbed } from "discord.js";
-import { getManifoldUser } from "../db/db";
+import { getManifoldUser } from "../db";
 
 import { Command } from "../command";
 import { confirmAdminPerms, confirmGuild, errorMessage } from "../utils/confirmPerms";

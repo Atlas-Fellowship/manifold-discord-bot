@@ -1,5 +1,5 @@
 import { CommandInteraction, User, MessageEmbed, Client } from "discord.js";
-import { getManifoldUser, incrementUserBalance, ManifoldUser } from "../db/db";
+import { getManifoldUser, incrementUserBalance, ManifoldUser } from "../db";
 import { errorMessage } from "./confirmPerms";
 
 export default async function incrementSingleUserPoints(

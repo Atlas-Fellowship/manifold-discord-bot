@@ -1,6 +1,6 @@
 import { Client } from "discord.js";
 import { Command } from "../command";
-import { registerGuildIfNotExists} from "../db/db";
+import { registerGuildIfNotExists} from "../db";
 
 export default (client: Client, commands: Command[]): void => {
   client.on("ready", async () => {

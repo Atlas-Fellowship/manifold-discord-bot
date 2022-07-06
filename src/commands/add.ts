@@ -1,7 +1,7 @@
 import { CommandInteraction, Client, Role } from "discord.js";
 
 import { Command } from "../command";
-import { getLogChannel } from "../db/db";
+import { getLogChannel } from "../db";
 
 import { errorMessage, confirmGuild, confirmAdminPerms } from "../utils/confirmPerms";
 import incrementRolePoints from "../utils/incrementRolePoints";

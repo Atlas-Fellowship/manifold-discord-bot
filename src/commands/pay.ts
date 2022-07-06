@@ -1,7 +1,7 @@
 import { CommandInteraction, Client, MessageEmbed } from "discord.js";
 
 import { Command } from "../command";
-import { getLogChannel, getManifoldUser, pay } from "../db/db";
+import { getLogChannel, getManifoldUser, pay } from "../db";
 
 import { errorMessage, confirmGuild, confirmManifoldUser } from "../utils/confirmPerms";
 

@@ -1,10 +1,7 @@
 import { CommandInteraction, Client, Role, MessageEmbed } from "discord.js";
 
 import { Command } from "../command";
-import {
-  clearLogChannel,
-  setLogChannel,
-} from "../db/db";
+import { clearLogChannel, setLogChannel, } from "../db";
 
 import { errorMessage, confirmAdminPerms, confirmGuild } from "../utils/confirmPerms";
 

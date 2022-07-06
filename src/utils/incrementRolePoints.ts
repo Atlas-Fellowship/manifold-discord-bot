@@ -1,5 +1,5 @@
 import { CommandInteraction, Role, MessageEmbed, Client } from "discord.js";
-import { incrementUserBalance, getManifoldUser, getLogChannel, ManifoldUser } from "../db/db";
+import { incrementUserBalance, getManifoldUser, getLogChannel, ManifoldUser } from "../db";
 import { errorMessage } from "./confirmPerms";
 import { zip } from "./other";
 
