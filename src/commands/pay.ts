@@ -76,8 +76,8 @@ const Pay: Command = {
     }
 
     const amountPaid = await pay(
-      donor.id,
-      recipient.id,
+      manifoldDonor.id,
+      manifoldRecipient.id,
       amount,
     );
 
@@ -94,8 +94,8 @@ const Pay: Command = {
       iconURL: manifoldDonor.avatarUrl
       })
       .setDescription(
-        `${manifoldDonor.name} gave **${amountPaid}** E-Clip${amountPaid === 1 ? "" : "s"
-        } to ${manifoldDonor.name} ${memoString}`
+        `${manifoldDonor.name} (@${manifoldDonor.username}) gave **${amountPaid}** E-Clip${amountPaid === 1 ? "" : "s"
+        } to ${manifoldRecipient.name} (@${manifoldRecipient.username})${memoString}`
       )
       .addFields(
         {
@@ -104,7 +104,7 @@ const Pay: Command = {
           inline: true
         },
         {
-          name: `${manifoldDonor.name}'s New Balance`,
+          name: `${manifoldRecipient.name}'s New Balance`,
           value: `${recipientPoints}`,
           inline: true
         }

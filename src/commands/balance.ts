@@ -2,7 +2,7 @@ import { CommandInteraction, Client, MessageEmbed } from "discord.js";
 import { getManifoldUser } from "../db/db";
 
 import { Command } from "../command";
-import { confirmGuild, confirmPerms, errorMessage } from "../utils/confirmPerms";
+import { confirmAdminPerms, confirmGuild, errorMessage } from "../utils/confirmPerms";
 
 const Balance: Command = {
   name: "balance",
@@ -19,23 +19,13 @@ const Balance: Command = {
     const specifiedUser = interaction.options.getUser("user");
     const interactionUser = interaction.user;
 
-    let guildId;
-
-    if (specifiedUser === null) {
-      const confirmRet = await confirmGuild(interaction, "view your E-Clips");
-      if (!confirmRet.success) {
-        await interaction.reply({ embeds: [confirmRet.reply] });
-        return;
-      }
-      guildId = confirmRet.guild.id;
-    } else {
+    if (specifiedUser !== null) {
       // need to have perms to view someone else's eclips
-      const confirmRet = await confirmPerms(interaction, "view another user's E-Clips");
+      const confirmRet = await confirmAdminPerms(interaction, "view another user's E-Clips");
       if (!confirmRet.success) {
         await interaction.reply({ embeds: [confirmRet.reply] });
         return;
       }
-      guildId = confirmRet.guild.id;
     }
 
     const discordUser = specifiedUser || interactionUser;

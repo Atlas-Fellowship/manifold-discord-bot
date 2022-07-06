@@ -79,7 +79,7 @@ export async function getManifoldUser(discordHandle: string): Promise<ManifoldUs
 
 export async function getRankings(): Promise<ManifoldUser[]> {
   const users = await db
-    .collection(`/users`)
+    .collection("/users")
     .orderBy("balance", "desc")
     .get();
 

@@ -1,6 +1,6 @@
-yarn build
+npm run build
 
 while true
 do
-  yarn start >> $1 2>&1
+  npm run start >> $1 2>&1
 done
