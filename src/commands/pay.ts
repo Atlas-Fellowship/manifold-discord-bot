@@ -70,7 +70,7 @@ const Pay: Command = {
     // check if both recipient has same time tag as
     const manifoldRecipient = await getManifoldUser(recipient.tag);
     if (!manifoldRecipient) {
-      const reply = errorMessage(`Couldn't find a linked Manifold account for (${interaction.user.tag}).`);
+      const reply = errorMessage(`Couldn't find a linked Manifold account for (${recipient.tag}).`);
       await interaction.reply({ embeds: [reply] });
       return;
     }
