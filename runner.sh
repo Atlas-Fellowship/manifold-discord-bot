@@ -1,3 +1,5 @@
+#!/bin/dash
+
 npm run build
 
 while true
